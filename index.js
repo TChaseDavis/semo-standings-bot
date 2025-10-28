@@ -5,6 +5,9 @@ const { Client, GatewayIntentBits, ChannelType, AttachmentBuilder } = require('d
 const cron = require('node-cron');
 const { createCanvas } = require('canvas');
 
+// prevent multiple weekly schedules
+let SCHEDULED = false;
+
 // ---- ENV ----
 const TOKEN = process.env.DISCORD_TOKEN;
 const TIMEZONE = process.env.TIMEZONE || 'America/Chicago';
@@ -309,19 +312,21 @@ function isLiveCmd(s) {
 }
 
 // ---- Boot & schedule ----
-client.once('ready', async () => {
+client.once('ready', () => {
+  if (SCHEDULED) {
+    console.log('⏭️  Schedule already active, skipping duplicate setup.');
+    return;
+  }
+  SCHEDULED = true;
+
   console.log(`Logged in as ${client.user.tag}`);
 
-  // (Optional) immediate test once:
-  // await postAllLeagues();
-
-  // Weekly: Tuesdays at 07:00 Central
   cron.schedule('0 7 * * 2', () => {
-    console.log('Cron: posting weekly standings for all leagues…');
+    console.log('🗓️ Cron: posting weekly standings for all leagues…');
     postAllLeagues();
   }, { timezone: TIMEZONE });
 
-  console.log(`Scheduled weekly posts for all leagues: Tuesdays 7:00 AM (${TIMEZONE})`);
+  console.log(`✅ Scheduled weekly posts for all leagues: Tuesdays 7:00 AM (${TIMEZONE})`);
 });
 
 // ---- Message listener (for !livestandings / !live) ----
